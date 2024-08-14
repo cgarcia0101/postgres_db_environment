@@ -21,9 +21,3 @@ services:
       POSTGRES_DB: tt_migration
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-  
-  adminer:
-      image: adminer
-      restart: always
-      ports:
-        - 8090:8080
