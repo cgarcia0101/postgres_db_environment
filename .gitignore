@@ -2,3 +2,4 @@ db_data/
 *.sql
 *.gz
 .env
+db_backup
