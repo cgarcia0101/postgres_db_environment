@@ -1,5 +1,6 @@
 db_data/
 *.sql
+*.res
 *.gz
 .env
 db_backup
