@@ -1,6 +1,9 @@
+.idea/
 db_data/
+ssh/
 *.sql
 *.res
 *.gz
+*.dump
 .env
-db_backup
+remote_config.sh

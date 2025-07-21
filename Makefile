@@ -62,4 +62,21 @@ local_restore:
 refresh: backup restore
 local_recreate: local_drop local_create
 
-.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore
+prod_backup:
+	@echo "Starting production database backup..."
+	@chmod +x ./prod_backup.sh
+	@docker compose exec db bash -c "/tmp/prod_backup.sh"
+	@echo "Production database backup completed"
+
+prod_restore:
+	@echo "Dropping local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
+	@echo "Creating local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
+	@echo "Restoring local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/prod_backup.dump"
+	@echo "Finished restoring local database"
+
+prod_refresh: prod_backup prod_restore
+
+.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh
