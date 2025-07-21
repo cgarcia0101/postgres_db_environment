@@ -20,10 +20,25 @@ restore:
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/db_backup.gz"
 	@echo "Finished restoring local database"
 
-local_drop:
+qa_backup:
+	@echo "Dumping remote QA database..."
+	@docker compose exec db bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} > /tmp/qa_db_backup.gz"
+	@echo "Finished database dump"
+
+qa_restore:
 	@echo "Dropping local database"
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Creating local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
+	@echo "Restoring local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/qa_db_backup.gz"
+	@echo "Finished restoring local database"
+
+qa_refresh: qa_backup qa_restore
+
+local_drop:
+	@echo "Dropping local database"
+	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 
 local_create:
 	@echo "Creating local database"
@@ -47,4 +62,4 @@ local_restore:
 refresh: backup restore
 local_recreate: local_drop local_create
 
-.PHONY: up down backup restore refresh
+.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore
