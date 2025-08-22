@@ -29,6 +29,7 @@ PGPASSWORD="$PROD_DB_PASSWORD" pg_dump \
     -d "$PROD_DB_NAME" \
     -Fc \
     -v \
+    --exclude-table-data=printer_server_errors \
     > "$BACKUP_FILE"
 
 # Clean up SSH tunnel

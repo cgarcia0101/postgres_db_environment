@@ -27,7 +27,7 @@ refresh: backup restore
 # Backup QA database
 qa_backup:
 	@echo "Dumping remote QA database..."
-	@time docker compose exec db bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} > /tmp/qa_db_backup.gz"
+	@time docker compose exec db bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} --exclude-table-data=printer_server_errors > /tmp/qa_db_backup.gz"
 	@echo "Finished remote QA database dump"
 
 # Restore local data from QA backup
