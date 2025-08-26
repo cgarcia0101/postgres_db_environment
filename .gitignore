@@ -7,3 +7,5 @@ ssh/
 *.dump
 .env
 remote_config.sh
+.DS_Store
+db_backup
