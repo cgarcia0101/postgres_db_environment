@@ -10,7 +10,7 @@ down:
 backup:
 	@echo "Dumping remote database..."
 	@time docker compose exec db bash -c "PGPASSWORD=${REMOTE_DB_PASS} pg_dump -Fc -v -d ${REMOTE_DB_DATABASE} -h ${REMOTE_DB_HOST} -U ${REMOTE_DB_USER} > /tmp/db_backup.gz"
-	@echo "Finished database dump"
+	@echo "Finished database dump from dev"
 
 # restore local data from dev database backup
 restore:
@@ -20,15 +20,15 @@ restore:
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Restoring local database"
 	@time docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/db_backup.gz"
-	@echo "Finished restoring local database"
+	@echo "Finished restoring local database from dev backup"
 
 refresh: backup restore
 
 # Backup QA database
 qa_backup:
 	@echo "Dumping remote QA database..."
-	@time docker compose exec db bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} > /tmp/qa_db_backup.gz"
-	@echo "Finished database dump"
+	@time docker compose exec db bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} --exclude-table-data=printer_server_errors > /tmp/qa_db_backup.gz"
+	@echo "Finished remote QA database dump"
 
 # Restore local data from QA backup
 qa_restore:
@@ -38,7 +38,7 @@ qa_restore:
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Restoring local database"
 	@time docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/qa_db_backup.gz"
-	@echo "Finished restoring local database"
+	@echo "Finished restoring local database from QA backup"
 
 qa_refresh: qa_backup qa_restore
 
@@ -68,7 +68,7 @@ local_restore:
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Restoring local database with local database backup"
 	@time docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/local_db_backup.gz"
-	@echo "Finished restoring local database"
+	@echo "Finished restoring local database from local backup"
 
 # Backup Prod database
 prod_backup:
@@ -85,7 +85,7 @@ prod_restore:
 	@docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Restoring local database"
 	@time docker compose exec db  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/prod_backup.dump"
-	@echo "Finished restoring local database"
+	@echo "Finished restoring local database from prod backup"
 
 prod_refresh: prod_backup prod_restore
 
