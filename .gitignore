@@ -5,6 +5,7 @@ ssh/
 *.res
 *.gz
 *.dump
+*.dump.zip
 .env
 remote_config.sh
 .DS_Store
