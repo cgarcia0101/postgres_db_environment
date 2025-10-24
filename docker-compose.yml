@@ -1,25 +1,78 @@
 services:
 
-  db:
+  db_dev:
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
     # set shared memory limit when using docker-compose
     shm_size: 128mb
-    # or set shared memory limit when deploy via swarm stack
-    #volumes:
-    #  - type: tmpfs
-    #    target: /dev/shm
-    #    tmpfs:
-    #      size: 134217728 # 128*2^20 bytes = 128Mb
-    ports:
-      - "5432:5432"
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - dev_data:/var/lib/postgresql/data
       - .:/tmp
     environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
+      #POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: tt_migration
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    networks:
+      - tt-database-network
+
+  db_qa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    volumes:
+      - qa_data:/var/lib/postgresql/data
+      - .:/tmp
+    environment:
+      #POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: tt_migration
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - tt-database-network
+
+  db_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    volumes:
+      - prod_data:/var/lib/postgresql/data
+      - .:/tmp
+    environment:
+      #POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: tt_migration
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - tt-database-network
+
+  db-proxy:
+    image: haproxy:2.9-alpine
+    container_name: db-proxy
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - tt-database-network
+    depends_on:
+      - db_dev
+      - db_qa
+      - db_prod
+
+volumes:
+  dev_data:
+  qa_data:
+  prod_data:
+
+networks:
+  tt-database-network:
+    

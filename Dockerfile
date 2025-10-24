@@ -1,4 +1,4 @@
-FROM postgres:latest
+FROM postgres:17.5
 
 # Install pgrep (procps) and openssh-client
 RUN apt-get update && \

@@ -41,16 +41,41 @@ SSH_HOST="your-ssh-host"
 ```bash 
 make up
 ```
+
+## Architecture
+
+This project provides a multi-environment PostgreSQL setup with the following components:
+
+### Database Services
+- **db_dev**: Development database (port 5432 via proxy)
+- **db_qa**: QA database (internal network only)
+- **db_prod**: Production database (internal network only)
+
+### HAProxy Load Balancer
+- **db-proxy**: HAProxy service that routes connections to different database environments
+- Default backend: Development database
+- Available backends: dev-db, qa-db, prod-db
+- Configuration: `haproxy/haproxy.cfg`
+
+### Network Configuration
+- All services run on the `tt-database-network` Docker network
+- HAProxy listens on port 5432 and routes to appropriate backend
+- Database services are only accessible through the proxy
 ## Available Commands
 
 ### Environment Management
-- `make up` - Start the Docker containers
-- `make down` - Stop and remove the Docker containers
+- `make up` - Start all Docker containers (databases + HAProxy proxy)
+- `make down` - Stop and remove all Docker containers
+
+### Environment Selection
+- `make activate_dev` - Switch HAProxy to development database
+- `make activate_qa` - Switch HAProxy to QA database
+- `make activate_prod` - Switch HAProxy to production database
 
 ### Development Database
-- `make backup` - Create a backup of the development database
-- `make restore` - Restore the development database backup to local
-- `make refresh` - Run backup and restore in sequence
+- `make dev_backup` - Create a backup of the development database
+- `make dev_restore` - Restore the development database backup to local
+- `make dev_refresh` - Run backup and restore in sequence
 
 ### QA Database
 - `make qa_backup` - Create a backup of the QA database
@@ -61,13 +86,6 @@ make up
 - `make prod_backup` - Create a backup of the production database
 - `make prod_restore` - Restore the production backup to local
 - `make prod_refresh` - Run production backup and restore in sequence
-
-### Local Database Management
-- `make local_backup` - Create a backup of the local database
-- `make local_restore` - Restore from a local database backup
-- `make local_drop` - Drop the local database
-- `make local_create` - Create a new local database
-- `make local_recreate` - Drop and recreate the local database
 
 ## Timing Information
 
