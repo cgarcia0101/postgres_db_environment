@@ -11,7 +11,7 @@ services:
       - dev_data:/var/lib/postgresql/data
       - .:/tmp
     environment:
-      #POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: tt_migration
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -29,7 +29,7 @@ services:
       - qa_data:/var/lib/postgresql/data
       - .:/tmp
     environment:
-      #POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: tt_migration
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -47,7 +47,7 @@ services:
       - prod_data:/var/lib/postgresql/data
       - .:/tmp
     environment:
-      #POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: tt_migration
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
