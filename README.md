@@ -61,6 +61,7 @@ This project provides a multi-environment PostgreSQL setup with the following co
 - All services run on the `tt-database-network` Docker network
 - HAProxy listens on port 5432 and routes to appropriate backend
 - Database services are only accessible through the proxy
+
 ## Available Commands
 
 ### Environment Management
@@ -86,6 +87,9 @@ This project provides a multi-environment PostgreSQL setup with the following co
 - `make prod_backup` - Create a backup of the production database
 - `make prod_restore` - Restore the production backup to local
 - `make prod_refresh` - Run production backup and restore in sequence
+
+### Show Active Environment
+- `make show_active_env` - Display the current active database environment by running the `get_current_env.sh` script inside the `db-proxy` container.
 
 ## Timing Information
 

@@ -79,4 +79,9 @@ activate_prod:
 	@docker compose restart db-proxy
 	@echo "Prod database activated"
 
-.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh activate_dev activate_qa activate_prod
+show_active_env:
+	@echo "Current environment is: "
+	@docker compose exec db-proxy sh -c "/tmp/get_current_env.sh"
+
+
+.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh activate_dev activate_qa activate_prod show_active_env

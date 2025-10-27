@@ -61,6 +61,7 @@ services:
       - "5432:5432"
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./get_current_env.sh:/tmp/get_current_env.sh:ro
     networks:
       - tt-database-network
     depends_on:
