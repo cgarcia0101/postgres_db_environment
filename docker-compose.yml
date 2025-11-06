@@ -57,6 +57,7 @@ services:
   db-proxy:
     image: haproxy:2.9-alpine
     container_name: db-proxy
+    restart: always
     ports:
       - "5432:5432"
     volumes:
