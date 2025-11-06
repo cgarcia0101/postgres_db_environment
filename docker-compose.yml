@@ -17,6 +17,8 @@ services:
       POSTGRES_PASSWORD: postgres
     networks:
       - tt-database-network
+    mem_limit: 512m
+    cpus: 0.5
 
   db_qa:
     build:
@@ -35,6 +37,8 @@ services:
       POSTGRES_PASSWORD: postgres
     networks:
       - tt-database-network
+    mem_limit: 512m
+    cpus: 0.5
 
   db_prod:
     build:
@@ -53,6 +57,8 @@ services:
       POSTGRES_PASSWORD: postgres
     networks:
       - tt-database-network
+    mem_limit: 512m
+    cpus: 0.5
 
   db-proxy:
     image: haproxy:2.9-alpine
@@ -69,6 +75,8 @@ services:
       - db_dev
       - db_qa
       - db_prod
+    mem_limit: 256m
+    cpus: 0.25
 
 volumes:
   dev_data:
