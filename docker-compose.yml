@@ -18,7 +18,7 @@ services:
     networks:
       - tt-database-network
     mem_limit: 512m
-    cpus: 0.5
+    cpus: 1
 
   db_qa:
     build:
@@ -38,7 +38,7 @@ services:
     networks:
       - tt-database-network
     mem_limit: 512m
-    cpus: 0.5
+    cpus: 1
 
   db_prod:
     build:
@@ -58,7 +58,7 @@ services:
     networks:
       - tt-database-network
     mem_limit: 512m
-    cpus: 0.5
+    cpus: 1
 
   db-proxy:
     image: haproxy:2.9-alpine
