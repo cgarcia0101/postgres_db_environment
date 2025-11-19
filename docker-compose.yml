@@ -54,6 +54,22 @@ services:
     networks:
       - tt-database-network
 
+  redis:
+    image: "redis:7.2"
+    command: [ "redis-server","--appendonly","yes","--appendfsync","everysec" ]
+    volumes:
+      - /var/lib/yourapp/redis:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD","redis-cli","ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "6379:6379"
+    networks:
+      - tt-database-network
+
   db-proxy:
     image: haproxy:2.9-alpine
     container_name: db-proxy
