@@ -63,19 +63,19 @@ prod_refresh: prod_backup prod_restore
 
 activate_dev:
 	@echo "Activating dev database"
-	@sed -i '' 's/default_backend \([a-zA-Z-]*\)/default_backend dev-db/' ./haproxy/haproxy.cfg
+	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend dev-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
 	@docker compose restart db-proxy
 	@echo "Dev database activated"
 
 activate_qa:
 	@echo "Activating QA database"
-	@sed -i '' 's/default_backend \([a-zA-Z-]*\)/default_backend qa-db/' ./haproxy/haproxy.cfg
+	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend qa-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
 	@docker compose restart db-proxy
 	@echo "QA database activated"
 
 activate_prod:
 	@echo "Activating prod database"
-	@sed -i '' 's/default_backend \([a-zA-Z-]*\)/default_backend prod-db/' ./haproxy/haproxy.cfg
+	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend prod-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
 	@docker compose restart db-proxy
 	@echo "Prod database activated"
 
