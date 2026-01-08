@@ -40,6 +40,8 @@ SSH_HOST="your-ssh-host"
 5. Start the Docker container:
 ```bash 
 make up
+# On Windows:
+.\Make.ps1 up
 ```
 
 ## Architecture
@@ -64,32 +66,41 @@ This project provides a multi-environment PostgreSQL setup with the following co
 
 ## Available Commands
 
+On **Linux/macOS**, use `make <command>`. On **Windows**, use `.\Make.ps1 <command>` in PowerShell.
+
 ### Environment Management
-- `make up` - Start all Docker containers (databases + HAProxy proxy)
-- `make down` - Stop and remove all Docker containers
+- `up` - Start all Docker containers (databases + HAProxy proxy)
+- `down` - Stop and remove all Docker containers
 
 ### Environment Selection
-- `make activate_dev` - Switch HAProxy to development database
-- `make activate_qa` - Switch HAProxy to QA database
-- `make activate_prod` - Switch HAProxy to production database
+- `activate_dev` - Switch HAProxy to development database
+- `activate_qa` - Switch HAProxy to QA database
+- `activate_prod` - Switch HAProxy to production database
 
 ### Development Database
-- `make dev_backup` - Create a backup of the development database
-- `make dev_restore` - Restore the development database backup to local
-- `make dev_refresh` - Run backup and restore in sequence
+- `dev_backup` - Create a backup of the development database
+- `dev_restore` - Restore the development database backup to local
+- `dev_refresh` - Run backup and restore in sequence
 
 ### QA Database
-- `make qa_backup` - Create a backup of the QA database
-- `make qa_restore` - Restore the QA database backup to local
-- `make qa_refresh` - Run QA backup and restore in sequence
+- `qa_backup` - Create a backup of the QA database
+- `qa_restore` - Restore the QA database backup to local
+- `qa_refresh` - Run QA backup and restore in sequence
 
 ### Production Database
-- `make prod_backup` - Create a backup of the production database
-- `make prod_restore` - Restore the production backup to local
-- `make prod_refresh` - Run production backup and restore in sequence
+- `prod_backup` - Create a backup of the production database
+- `prod_restore` - Restore the production backup to local
+- `prod_refresh` - Run production backup and restore in sequence
 
 ### Show Active Environment
-- `make show_active_env` - Display the current active database environment by running the `get_current_env.sh` script inside the `db-proxy` container.
+- `show_active_env` - Display the current active database environment by running the `get_current_env.sh` script inside the `db-proxy` container.
+
+## Windows Usage Notes
+
+If you encounter an execution policy error when running `.ps1` files, you may need to run this once in your PowerShell terminal:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
 
 ## Timing Information
 
