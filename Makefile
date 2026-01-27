@@ -9,7 +9,7 @@ down:
 # Backup dev database
 dev_backup:
 	@echo "Dumping remote database..."
-	@time docker compose exec db_dev bash -c "PGPASSWORD=${REMOTE_DB_PASS} pg_dump -Fc -v -d ${REMOTE_DB_DATABASE} -h ${REMOTE_DB_HOST} -U ${REMOTE_DB_USER} > /tmp/db_backup.gz"
+	@time docker compose exec db_dev bash -c "PGPASSWORD=${REMOTE_DB_PASS} pg_dump -Fc -v -d ${REMOTE_DB_DATABASE} -h ${REMOTE_DB_HOST} -U ${REMOTE_DB_USER} -n public > /tmp/db_backup.gz"
 	@echo "Finished database dump from dev"
 
 # restore local data from dev database backup
@@ -27,7 +27,7 @@ dev_refresh: dev_backup dev_restore
 # Backup QA database
 qa_backup:
 	@echo "Dumping remote QA database..."
-	@time docker compose exec db_qa bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} --exclude-table-data=printer_server_errors > /tmp/qa_db_backup.gz"
+	@time docker compose exec db_qa bash -c "PGPASSWORD=${QA_DB_PASS} pg_dump -Fc -v -d ${QA_DB_DATABASE} -h ${QA_DB_HOST} -U ${QA_DB_USER} -n public --exclude-table-data=printer_server_errors > /tmp/qa_db_backup.gz"
 	@echo "Finished remote QA database dump"
 
 # Restore local data from QA backup
