@@ -1,0 +1,113 @@
+# Load environment variables from .env
+if (Test-Path .env) {
+    Get-Content .env | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
+        $name, $value = $_.Split('=', 2)
+        [System.Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+    }
+}
+
+function Run-Up {
+    docker compose up -d
+}
+
+function Run-Down {
+    docker compose down -v
+}
+
+# --- Dev Database ---
+function Run-DevBackup {
+    Write-Host "Dumping remote database..." -ForegroundColor Cyan
+    $cmd = "PGPASSWORD=$env:REMOTE_DB_PASS pg_dump -Fc -v -d $env:REMOTE_DB_DATABASE -h $env:REMOTE_DB_HOST -U $env:REMOTE_DB_USER > /tmp/db_backup.gz"
+    Measure-Command { docker compose exec db_dev bash -c $cmd } | Out-Default
+    Write-Host "Finished database dump from dev" -ForegroundColor Green
+}
+
+function Run-DevRestore {
+    Write-Host "Dropping local database..." -ForegroundColor Yellow
+    docker compose exec db_dev bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Creating local database..." -ForegroundColor Yellow
+    docker compose exec db_dev bash -c "PGPASSWORD=$env:LOCAL_DB_PASS createdb -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Restoring local database..." -ForegroundColor Yellow
+    $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/db_backup.gz"
+    Measure-Command { docker compose exec db_dev bash -c $cmd } | Out-Default
+    Write-Host "Finished restoring local database from dev backup" -ForegroundColor Green
+}
+
+# --- QA Database ---
+function Run-QaBackup {
+    Write-Host "Dumping remote QA database..." -ForegroundColor Cyan
+    $cmd = "PGPASSWORD=$env:QA_DB_PASS pg_dump -Fc -v -d $env:QA_DB_DATABASE -h $env:QA_DB_HOST -U $env:QA_DB_USER --exclude-table-data=printer_server_errors > /tmp/qa_db_backup.gz"
+    Measure-Command { docker compose exec db_qa bash -c $cmd } | Out-Default
+    Write-Host "Finished remote QA database dump" -ForegroundColor Green
+}
+
+function Run-QaRestore {
+    Write-Host "Dropping local database..." -ForegroundColor Yellow
+    docker compose exec db_qa bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Creating local database..." -ForegroundColor Yellow
+    docker compose exec db_qa bash -c "PGPASSWORD=$env:LOCAL_DB_PASS createdb -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Restoring local database..." -ForegroundColor Yellow
+    $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/qa_db_backup.gz"
+    Measure-Command { docker compose exec db_qa bash -c $cmd } | Out-Default
+    Write-Host "Finished restoring local database from QA backup" -ForegroundColor Green
+}
+
+# --- Prod Database ---
+function Run-ProdBackup {
+    Write-Host "Starting production database backup..." -ForegroundColor Cyan
+    # Shell scripts inside containers still need execution rights
+    docker compose exec db_prod bash -c "chmod +x /tmp/prod_backup.sh && /tmp/prod_backup.sh"
+    Write-Host "Production database backup completed" -ForegroundColor Green
+}
+
+function Run-ProdRestore {
+    Write-Host "Dropping local database..." -ForegroundColor Yellow
+    docker compose exec db_prod bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Creating local database..." -ForegroundColor Yellow
+    docker compose exec db_prod bash -c "PGPASSWORD=$env:LOCAL_DB_PASS createdb -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+    
+    Write-Host "Restoring local database..." -ForegroundColor Yellow
+    $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/prod_backup.dump"
+    Measure-Command { docker compose exec db_prod bash -c $cmd } | Out-Default
+    Write-Host "Finished restoring local database from prod backup" -ForegroundColor Green
+}
+
+# --- Proxy Management ---
+function Update-Haproxy {
+    param($backend)
+    Write-Host "Activating $backend database..." -ForegroundColor Cyan
+    $cfgPath = "./haproxy/haproxy.cfg"
+    (Get-Content $cfgPath) -replace 'default_backend [a-zA-Z-]*', "default_backend $backend" | Set-Content $cfgPath
+    docker compose restart db-proxy
+    Write-Host "$backend database activated" -ForegroundColor Green
+}
+
+# --- Command Router ---
+switch ($args[0]) {
+    "up"             { Run-Up }
+    "down"           { Run-Down }
+    "dev_backup"     { Run-DevBackup }
+    "dev_restore"    { Run-DevRestore }
+    "dev_refresh"    { Run-DevBackup; Run-DevRestore }
+    "qa_backup"      { Run-QaBackup }
+    "qa_restore"     { Run-QaRestore }
+    "qa_refresh"     { Run-QaBackup; Run-QaRestore }
+    "prod_backup"    { Run-ProdBackup }
+    "prod_restore"   { Run-ProdRestore }
+    "prod_refresh"   { Run-ProdBackup; Run-ProdRestore }
+    "activate_dev"   { Update-Haproxy "dev-db" }
+    "activate_qa"    { Update-Haproxy "qa-db" }
+    "activate_prod"  { Update-Haproxy "prod-db" }
+    "show_active_env" { 
+        Write-Host "Current environment is: "
+        docker compose exec db-proxy sh -c "/tmp/get_current_env.sh"
+    }
+    default {
+        Write-Host "Usage: .\Makefile.ps1 [up|down|dev_refresh|qa_refresh|prod_refresh|activate_dev|...]" -ForegroundColor Gray
+    }
+}
