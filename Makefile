@@ -1,5 +1,7 @@
 include .env
 
+RESTORE_LOG := restore.log
+
 up:
 	@docker compose up -d
 
@@ -21,6 +23,7 @@ dev_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_dev  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/db_backup.gz"
 	@echo "Finished restoring local database from dev backup"
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') dev_restore" >> $(RESTORE_LOG)
 
 dev_refresh: dev_backup dev_restore
 
@@ -39,6 +42,7 @@ qa_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_qa  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/qa_db_backup.gz"
 	@echo "Finished restoring local database from QA backup"
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') qa_restore" >> $(RESTORE_LOG)
 
 qa_refresh: qa_backup qa_restore
 
@@ -58,8 +62,17 @@ prod_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_prod  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/prod_backup.dump"
 	@echo "Finished restoring local database from prod backup"
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') prod_restore" >> $(RESTORE_LOG)
 
 prod_refresh: prod_backup prod_restore
+
+# SSH tunnel to production database (connect to localhost:5433)
+# Requires: remote_config.sh and ssh/ key. Ctrl+C to close.
+prod_tunnel:
+	@echo "Starting SSH tunnel to production DB (localhost:5433 -> prod)..."
+	@echo "Connect with: psql -h localhost -p 5433 -U postgres -d postgres"
+	@echo "Press Ctrl+C to close the tunnel."
+	docker compose run --rm -p 5433:5433 db_prod bash -c 'source /tmp/remote_config.sh && ssh -N -L 5433:"$$PROD_DB_HOST":"$$PROD_DB_PORT" -i "$$SSH_KEY_PATH" -p "$$SSH_PORT" "$$SSH_USER@$$SSH_HOST"'
 
 activate_dev:
 	@echo "Activating dev database"
@@ -83,5 +96,16 @@ show_active_env:
 	@echo "Current environment is: "
 	@docker compose exec db-proxy sh -c "/tmp/get_current_env.sh"
 
+# Show last restore time for each database
+show_restore_log:
+	@if [ -f $(RESTORE_LOG) ]; then \
+		echo "Last restore times:"; \
+		for db in dev_restore qa_restore prod_restore; do \
+			last=$$(grep " $$db$$" $(RESTORE_LOG) | tail -1); \
+			[ -n "$$last" ] && echo "  $$last" || echo "  $$db: never"; \
+		done; \
+	else \
+		echo "No restores logged yet ($(RESTORE_LOG) not found)."; \
+	fi
 
-.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh activate_dev activate_qa activate_prod show_active_env
+.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh prod_tunnel activate_dev activate_qa activate_prod show_active_env show_restore_log

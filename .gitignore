@@ -10,3 +10,4 @@ ssh/
 remote_config.sh
 .DS_Store
 db_backup
+restore.log
