@@ -102,8 +102,7 @@ activate_prod:
 	@echo "Prod database activated"
 
 show_active_env:
-	@echo "Current environment is: "
-	@docker compose exec db-proxy sh -c "/tmp/get_current_env.sh"
+	@echo "Current environment is: $$(grep -E '^\s*default_backend' ./haproxy/haproxy-frontend.cfg 2>/dev/null | awk '{print $$2}' | cut -d'-' -f1 || echo 'unknown')"
 
 # Show last restore time for each database
 show_restore_log:

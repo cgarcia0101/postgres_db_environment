@@ -119,8 +119,13 @@ switch ($args[0]) {
     "activate_qa"    { Update-Haproxy "qa-db" }
     "activate_prod"  { Update-Haproxy "prod-db" }
     "show_active_env" { 
-        Write-Host "Current environment is: "
-        docker compose exec db-proxy sh -c "/tmp/get_current_env.sh"
+        $cfgPath = "./haproxy/haproxy-frontend.cfg"
+        $envName = "unknown"
+        if (Test-Path $cfgPath) {
+            $line = Get-Content $cfgPath | Where-Object { $_ -match 'default_backend\s+(\S+)' } | Select-Object -First 1
+            if ($line -match 'default_backend\s+(\w+)-') { $envName = $Matches[1] }
+        }
+        Write-Host "Current environment is: $envName"
     }
     default {
         Write-Host "Usage: .\Makefile.ps1 [up|down|dev_refresh|qa_refresh|prod_refresh|activate_dev|...]" -ForegroundColor Gray
