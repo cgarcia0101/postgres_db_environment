@@ -16,6 +16,8 @@ dev_backup:
 
 # restore local data from dev database backup
 dev_restore:
+	@echo "Restarting database container to ensure no active connections..."
+	@docker compose restart db_dev
 	@echo "Dropping local database"
 	@docker compose exec db_dev  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Creating local database"
@@ -35,6 +37,8 @@ qa_backup:
 
 # Restore local data from QA backup
 qa_restore:
+	@echo "Restarting database container to ensure no active connections..."
+	@docker compose restart db_qa
 	@echo "Dropping local database"
 	@docker compose exec db_qa  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Creating local database"
@@ -55,6 +59,8 @@ prod_backup:
 
 # Restore local data from prod backup
 prod_restore:
+	@echo "Restarting database container to ensure no active connections..."
+	@docker compose restart db_prod
 	@echo "Dropping local database"
 	@docker compose exec db_prod  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
 	@echo "Creating local database"

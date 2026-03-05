@@ -23,6 +23,8 @@ function Run-DevBackup {
 }
 
 function Run-DevRestore {
+    Write-Host "Restarting database container to ensure no active connections..." -ForegroundColor Cyan
+    docker compose restart db_dev
     Write-Host "Dropping local database..." -ForegroundColor Yellow
     docker compose exec db_dev bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
     
@@ -44,6 +46,8 @@ function Run-QaBackup {
 }
 
 function Run-QaRestore {
+    Write-Host "Restarting database container to ensure no active connections..." -ForegroundColor Cyan
+    docker compose restart db_qa
     Write-Host "Dropping local database..." -ForegroundColor Yellow
     docker compose exec db_qa bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
     
@@ -65,6 +69,8 @@ function Run-ProdBackup {
 }
 
 function Run-ProdRestore {
+    Write-Host "Restarting database container to ensure no active connections..." -ForegroundColor Cyan
+    docker compose restart db_prod
     Write-Host "Dropping local database..." -ForegroundColor Yellow
     docker compose exec db_prod bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
     
