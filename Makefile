@@ -2,7 +2,9 @@ include .env
 
 RESTORE_LOG := restore.log
 
+# Ensure gitignored frontend config exists so db-proxy can start
 up:
+	@test -f ./haproxy/haproxy-frontend.cfg || cp ./haproxy/haproxy-frontend.cfg.example ./haproxy/haproxy-frontend.cfg
 	@docker compose up -d
 
 down:
@@ -80,21 +82,22 @@ prod_tunnel:
 	@echo "Press Ctrl+C to close the tunnel."
 	docker compose run --rm -p 5433:5433 db_prod bash -c 'source /tmp/remote_config.sh && ssh -N -L 5433:"$$PROD_DB_HOST":"$$PROD_DB_PORT" -i "$$SSH_KEY_PATH" -p "$$SSH_PORT" "$$SSH_USER@$$SSH_HOST"'
 
+# Write only the gitignored frontend file so haproxy.cfg stays clean in git
 activate_dev:
 	@echo "Activating dev database"
-	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend dev-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
+	@printf 'frontend pg-frontend\n    bind *:5432\n    default_backend dev-db\n' > ./haproxy/haproxy-frontend.cfg
 	@docker compose restart db-proxy
 	@echo "Dev database activated"
 
 activate_qa:
 	@echo "Activating QA database"
-	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend qa-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
+	@printf 'frontend pg-frontend\n    bind *:5432\n    default_backend qa-db\n' > ./haproxy/haproxy-frontend.cfg
 	@docker compose restart db-proxy
 	@echo "QA database activated"
 
 activate_prod:
 	@echo "Activating prod database"
-	@sed -i.bak 's/default_backend \([a-zA-Z-]*\)/default_backend prod-db/' ./haproxy/haproxy.cfg && rm -f ./haproxy/haproxy.cfg.bak
+	@printf 'frontend pg-frontend\n    bind *:5432\n    default_backend prod-db\n' > ./haproxy/haproxy-frontend.cfg
 	@docker compose restart db-proxy
 	@echo "Prod database activated"
 

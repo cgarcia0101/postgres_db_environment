@@ -76,8 +76,10 @@ services:
     restart: always
     ports:
       - "5432:5432"
+    command: ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg", "-f", "/usr/local/etc/haproxy/haproxy-frontend.cfg"]
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./haproxy/haproxy-frontend.cfg:/usr/local/etc/haproxy/haproxy-frontend.cfg:ro
       - ./get_current_env.sh:/tmp/get_current_env.sh:ro
     networks:
       - tt-database-network

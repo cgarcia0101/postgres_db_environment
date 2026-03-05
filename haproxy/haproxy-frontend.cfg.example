@@ -1,0 +1,4 @@
+# Copy to haproxy-frontend.cfg (gitignored). activate_* targets overwrite this file.
+frontend pg-frontend
+    bind *:5432
+    default_backend prod-db

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Path to the HAProxy configuration file
-CONFIG_PATH="haproxy/haproxy.cfg"
+# Path to the frontend config (default_backend); use container path when run in db-proxy
+CONFIG_PATH="${HAPROXY_FRONTEND_CFG:-/usr/local/etc/haproxy/haproxy-frontend.cfg}"
 
 # Check if the file exists
 if [[ ! -f "$CONFIG_PATH" ]]; then

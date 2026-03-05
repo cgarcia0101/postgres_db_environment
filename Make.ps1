@@ -7,6 +7,11 @@ if (Test-Path .env) {
 }
 
 function Run-Up {
+    $frontendCfg = "./haproxy/haproxy-frontend.cfg"
+    $exampleCfg = "./haproxy/haproxy-frontend.cfg.example"
+    if (-not (Test-Path $frontendCfg) -and (Test-Path $exampleCfg)) {
+        Copy-Item $exampleCfg $frontendCfg
+    }
     docker compose up -d
 }
 
@@ -83,12 +88,16 @@ function Run-ProdRestore {
     Write-Host "Finished restoring local database from prod backup" -ForegroundColor Green
 }
 
-# --- Proxy Management ---
+# --- Proxy Management (writes gitignored haproxy-frontend.cfg only) ---
 function Update-Haproxy {
     param($backend)
     Write-Host "Activating $backend database..." -ForegroundColor Cyan
-    $cfgPath = "./haproxy/haproxy.cfg"
-    (Get-Content $cfgPath) -replace 'default_backend [a-zA-Z-]*', "default_backend $backend" | Set-Content $cfgPath
+    $frontendCfg = "./haproxy/haproxy-frontend.cfg"
+    @"
+frontend pg-frontend
+    bind *:5432
+    default_backend $backend
+"@ | Set-Content -Path $frontendCfg -NoNewline
     docker compose restart db-proxy
     Write-Host "$backend database activated" -ForegroundColor Green
 }
