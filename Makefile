@@ -107,11 +107,36 @@ show_active_env:
 # Show last restore time for each database
 show_restore_log:
 	@if [ -f $(RESTORE_LOG) ]; then \
-		echo "Last restore times:"; \
+		echo ""; \
+		echo "Last Restore Times"; \
+		echo ""; \
+		printf "  %-8s %-19s %s\n" "Env" "Elapsed" "Date"; \
+		printf "  %-8s %-19s %s\n" "---" "-------" "-------------------"; \
 		for db in dev_restore qa_restore prod_restore; do \
+			env_name=$$(echo "$$db" | sed 's/_restore//'); \
 			last=$$(grep " $$db$$" $(RESTORE_LOG) | tail -1); \
-			[ -n "$$last" ] && echo "  $$last" || echo "  $$db: never"; \
+			if [ -n "$$last" ]; then \
+				ts=$$(echo "$$last" | awk '{print $$1 " " $$2}'); \
+				ts_fmt=$$(echo "$$ts" | tr '-' '/'); \
+				epoch_ts=$$(date -j -f "%Y-%m-%d %H:%M:%S" "$$ts" "+%s" 2>/dev/null); \
+				epoch_now=$$(date "+%s"); \
+				diff_sec=$$((epoch_now - epoch_ts)); \
+				if [ $$diff_sec -lt 60 ]; then \
+					elapsed="$$diff_sec seconds ago"; \
+				elif [ $$diff_sec -lt 3600 ]; then \
+					elapsed="$$((diff_sec / 60)) minutes ago"; \
+				elif [ $$diff_sec -lt 86400 ]; then \
+					elapsed="$$((diff_sec / 3600)) hours ago"; \
+				else \
+					elapsed="$$((diff_sec / 86400)) days ago"; \
+				fi; \
+			else \
+				elapsed="never"; \
+				ts_fmt="—"; \
+			fi; \
+			printf "  %-8s %-19s %s\n" "$$env_name" "$$elapsed" "$$ts_fmt"; \
 		done; \
+		echo ""; \
 	else \
 		echo "No restores logged yet ($(RESTORE_LOG) not found)."; \
 	fi

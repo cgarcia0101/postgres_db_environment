@@ -40,6 +40,7 @@ function Run-DevRestore {
     $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/db_backup.gz"
     Measure-Command { docker compose exec db_dev bash -c $cmd } | Out-Default
     Write-Host "Finished restoring local database from dev backup" -ForegroundColor Green
+    Add-Content -Path "restore.log" -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') dev_restore"
 }
 
 # --- QA Database ---
@@ -63,6 +64,7 @@ function Run-QaRestore {
     $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/qa_db_backup.gz"
     Measure-Command { docker compose exec db_qa bash -c $cmd } | Out-Default
     Write-Host "Finished restoring local database from QA backup" -ForegroundColor Green
+    Add-Content -Path "restore.log" -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') qa_restore"
 }
 
 # --- Prod Database ---
@@ -86,6 +88,7 @@ function Run-ProdRestore {
     $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/prod_backup.dump"
     Measure-Command { docker compose exec db_prod bash -c $cmd } | Out-Default
     Write-Host "Finished restoring local database from prod backup" -ForegroundColor Green
+    Add-Content -Path "restore.log" -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') prod_restore"
 }
 
 # --- Proxy Management (writes gitignored haproxy-frontend.cfg only) ---
@@ -100,6 +103,43 @@ frontend pg-frontend
 "@ | Set-Content -Path $frontendCfg -NoNewline
     docker compose restart db-proxy
     Write-Host "$backend database activated" -ForegroundColor Green
+}
+
+function Show-RestoreLog {
+    $logFile = "restore.log"
+    if (Test-Path $logFile) {
+        Write-Host ""
+        Write-Host "Last Restore Times"
+        Write-Host ""
+        Write-Host ("  {0,-8} {1,-19} {2}" -f "Env", "Elapsed", "Date")
+        Write-Host ("  {0,-8} {1,-19} {2}" -f "---", "-------", "-------------------")
+        foreach ($db in @("dev_restore", "qa_restore", "prod_restore")) {
+            $last = Get-Content $logFile | Where-Object { $_ -match " $db$" } | Select-Object -Last 1
+            $envName = $db -replace '_restore', ''
+            if ($last) {
+                $ts = ($last -split '\s+', 3)[0..1] -join ' '
+                $parsed = [datetime]::ParseExact($ts, 'yyyy-MM-dd HH:mm:ss', $null)
+                $tsFmt = $parsed.ToString('yyyy/MM/dd HH:mm:ss')
+                $diff = (Get-Date) - $parsed
+                if ($diff.TotalMinutes -lt 1) {
+                    $elapsed = "$([math]::Floor($diff.TotalSeconds)) seconds ago"
+                } elseif ($diff.TotalHours -lt 1) {
+                    $elapsed = "$([math]::Floor($diff.TotalMinutes)) minutes ago"
+                } elseif ($diff.TotalDays -lt 1) {
+                    $elapsed = "$([math]::Floor($diff.TotalHours)) hours ago"
+                } else {
+                    $elapsed = "$([math]::Floor($diff.TotalDays)) days ago"
+                }
+            } else {
+                $elapsed = "never"
+                $tsFmt = [string][char]0x2014
+            }
+            Write-Host ("  {0,-8} {1,-19} {2}" -f $envName, $elapsed, $tsFmt)
+        }
+        Write-Host ""
+    } else {
+        Write-Host "No restores logged yet ($logFile not found)."
+    }
 }
 
 # --- Command Router ---
@@ -118,7 +158,8 @@ switch ($args[0]) {
     "activate_dev"   { Update-Haproxy "dev-db" }
     "activate_qa"    { Update-Haproxy "qa-db" }
     "activate_prod"  { Update-Haproxy "prod-db" }
-    "show_active_env" { 
+    "show_restore_log" { Show-RestoreLog }
+    "show_active_env" {
         $cfgPath = "./haproxy/haproxy-frontend.cfg"
         $envName = "unknown"
         if (Test-Path $cfgPath) {

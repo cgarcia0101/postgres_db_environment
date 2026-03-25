@@ -91,9 +91,11 @@ On **Linux/macOS**, use `make <command>`. On **Windows**, use `.\Make.ps1 <comma
 - `prod_backup` - Create a backup of the production database
 - `prod_restore` - Restore the production backup to local
 - `prod_refresh` - Run production backup and restore in sequence
+- `prod_tunnel` - Start an SSH tunnel to the production database. Exposes prod DB on `localhost:5433`. Requires `remote_config.sh` and SSH key. Connect with `psql -h localhost -p 5433 -U postgres -d postgres`. Press Ctrl+C to close the tunnel.
 
-### Show Active Environment
-- `show_active_env` - Display the current active database environment by running the `get_current_env.sh` script inside the `db-proxy` container.
+### Status & Logs
+- `show_active_env` - Display the current active database environment (which backend HAProxy is routing to).
+- `show_restore_log` - Show the last restore time for each database (dev, QA, prod) from `restore.log`. Displays "never" if a database has not been restored yet.
 
 ## Windows Usage Notes
 
