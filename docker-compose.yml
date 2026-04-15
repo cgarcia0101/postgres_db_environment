@@ -70,6 +70,35 @@ services:
     networks:
       - tt-database-network
 
+  redis-dev:
+    build:
+      context: .
+      dockerfile: redis-dev/Dockerfile
+      args:
+        SSH_KEY_FILE: ${REDIS_DEV_SSH_KEY_PATH}
+    environment:
+      - BASTION_URL=${BASTION_URL}
+      - REDIS_DEV_USER=${REDIS_DEV_USER}
+      - REDIS_DEV_URL=${REDIS_DEV_URL}
+    ports:
+      - "6380:6378"
+    restart: unless-stopped
+    networks:
+      - tt-database-network
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis_insight_data:/data
+    networks:
+      - tt-database-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
   db-proxy:
     image: haproxy:2.9-alpine
     container_name: db-proxy
@@ -92,6 +121,7 @@ volumes:
   dev_data:
   qa_data:
   prod_data:
+  redis_insight_data:
 
 networks:
   tt-database-network:
