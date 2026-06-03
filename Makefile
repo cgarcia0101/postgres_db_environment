@@ -27,9 +27,9 @@ dev_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_dev  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/db_backup.gz"
 	@echo "Finished restoring local database from dev backup"
-	@echo "$$(date '+%Y-%m-%d %H:%M:%S') dev_restore" >> $(RESTORE_LOG)
 
 dev_refresh: dev_backup dev_restore
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') dev_refresh" >> $(RESTORE_LOG)
 
 # Backup QA database
 qa_backup:
@@ -48,9 +48,9 @@ qa_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_qa  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/qa_db_backup.gz"
 	@echo "Finished restoring local database from QA backup"
-	@echo "$$(date '+%Y-%m-%d %H:%M:%S') qa_restore" >> $(RESTORE_LOG)
 
 qa_refresh: qa_backup qa_restore
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') qa_refresh" >> $(RESTORE_LOG)
 
 # Backup Snap database
 snap_backup:
@@ -69,9 +69,9 @@ snap_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_snap  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/snap_db_backup.gz"
 	@echo "Finished restoring local database from Snap backup"
-	@echo "$$(date '+%Y-%m-%d %H:%M:%S') snap_restore" >> $(RESTORE_LOG)
 
 snap_refresh: snap_backup snap_restore
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') snap_refresh" >> $(RESTORE_LOG)
 
 # Backup Prod database
 prod_backup:
@@ -91,9 +91,9 @@ prod_restore:
 	@echo "Restoring local database"
 	@time docker compose exec db_prod  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/prod_backup.dump"
 	@echo "Finished restoring local database from prod backup"
-	@echo "$$(date '+%Y-%m-%d %H:%M:%S') prod_restore" >> $(RESTORE_LOG)
 
 prod_refresh: prod_backup prod_restore
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') prod_refresh" >> $(RESTORE_LOG)
 
 # SSH tunnel to production database (connect to localhost:5433)
 # Requires: remote_config.sh and ssh/ key. Ctrl+C to close.
@@ -135,12 +135,12 @@ show_active_env:
 show_restore_log:
 	@if [ -f $(RESTORE_LOG) ]; then \
 		echo ""; \
-		echo "Last Restore Times"; \
+		echo "Last Refresh Times"; \
 		echo ""; \
 		printf "  %-8s %-19s %s\n" "Env" "Elapsed" "Date"; \
 		printf "  %-8s %-19s %s\n" "---" "-------" "-------------------"; \
-		for db in dev_restore qa_restore snap_restore prod_restore; do \
-			env_name=$$(echo "$$db" | sed 's/_restore//'); \
+		for db in dev_refresh qa_refresh snap_refresh prod_refresh; do \
+			env_name=$$(echo "$$db" | sed 's/_refresh//'); \
 			last=$$(grep " $$db$$" $(RESTORE_LOG) | tail -1); \
 			if [ -n "$$last" ]; then \
 				ts=$$(echo "$$last" | awk '{print $$1 " " $$2}'); \
