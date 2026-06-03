@@ -67,6 +67,30 @@ function Run-QaRestore {
     Add-Content -Path "restore.log" -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') qa_restore"
 }
 
+# --- Snap Database ---
+function Run-SnapBackup {
+    Write-Host "Dumping remote Snap database..." -ForegroundColor Cyan
+    $cmd = "PGPASSWORD=$env:SNAP_DB_PASS pg_dump -Fc -v -d $env:SNAP_DB_DATABASE -h $env:SNAP_DB_HOST -U $env:SNAP_DB_USER --exclude-table-data=printer_server_errors > /tmp/snap_db_backup.gz"
+    Measure-Command { docker compose exec db_snap bash -c $cmd } | Out-Default
+    Write-Host "Finished remote Snap database dump" -ForegroundColor Green
+}
+
+function Run-SnapRestore {
+    Write-Host "Restarting database container to ensure no active connections..." -ForegroundColor Cyan
+    docker compose restart db_snap
+    Write-Host "Dropping local database..." -ForegroundColor Yellow
+    docker compose exec db_snap bash -c "PGPASSWORD=$env:LOCAL_DB_PASS dropdb --if-exists -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+
+    Write-Host "Creating local database..." -ForegroundColor Yellow
+    docker compose exec db_snap bash -c "PGPASSWORD=$env:LOCAL_DB_PASS createdb -U $env:LOCAL_DB_USER $env:LOCAL_DB_DATABASE"
+
+    Write-Host "Restoring local database..." -ForegroundColor Yellow
+    $cmd = "PGPASSWORD=$env:LOCAL_DB_PASS pg_restore --clean --if-exists -Fc -U $env:LOCAL_DB_USER -d $env:LOCAL_DB_DATABASE /tmp/snap_db_backup.gz"
+    Measure-Command { docker compose exec db_snap bash -c $cmd } | Out-Default
+    Write-Host "Finished restoring local database from Snap backup" -ForegroundColor Green
+    Add-Content -Path "restore.log" -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') snap_restore"
+}
+
 # --- Prod Database ---
 function Run-ProdBackup {
     Write-Host "Starting production database backup..." -ForegroundColor Cyan
@@ -113,7 +137,7 @@ function Show-RestoreLog {
         Write-Host ""
         Write-Host ("  {0,-8} {1,-19} {2}" -f "Env", "Elapsed", "Date")
         Write-Host ("  {0,-8} {1,-19} {2}" -f "---", "-------", "-------------------")
-        foreach ($db in @("dev_restore", "qa_restore", "prod_restore")) {
+        foreach ($db in @("dev_restore", "qa_restore", "snap_restore", "prod_restore")) {
             $last = Get-Content $logFile | Where-Object { $_ -match " $db$" } | Select-Object -Last 1
             $envName = $db -replace '_restore', ''
             if ($last) {
@@ -152,11 +176,15 @@ switch ($args[0]) {
     "qa_backup"      { Run-QaBackup }
     "qa_restore"     { Run-QaRestore }
     "qa_refresh"     { Run-QaBackup; Run-QaRestore }
+    "snap_backup"    { Run-SnapBackup }
+    "snap_restore"   { Run-SnapRestore }
+    "snap_refresh"   { Run-SnapBackup; Run-SnapRestore }
     "prod_backup"    { Run-ProdBackup }
     "prod_restore"   { Run-ProdRestore }
     "prod_refresh"   { Run-ProdBackup; Run-ProdRestore }
     "activate_dev"   { Update-Haproxy "dev-db" }
     "activate_qa"    { Update-Haproxy "qa-db" }
+    "activate_snap"  { Update-Haproxy "snap-db" }
     "activate_prod"  { Update-Haproxy "prod-db" }
     "show_restore_log" { Show-RestoreLog }
     "show_active_env" {

@@ -36,6 +36,24 @@ services:
     networks:
       - tt-database-network
 
+  db_snap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    volumes:
+      - snap_data:/var/lib/postgresql/data
+      - .:/tmp
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: tt_migration
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - tt-database-network
+
   db_prod:
     build:
       context: .
@@ -115,11 +133,13 @@ services:
     depends_on:
       - db_dev
       - db_qa
+      - db_snap
       - db_prod
 
 volumes:
   dev_data:
   qa_data:
+  snap_data:
   prod_data:
   redis_insight_data:
 

@@ -52,6 +52,27 @@ qa_restore:
 
 qa_refresh: qa_backup qa_restore
 
+# Backup Snap database
+snap_backup:
+	@echo "Dumping remote Snap database..."
+	@time docker compose exec db_snap bash -c "PGPASSWORD=${SNAP_DB_PASS} pg_dump -Fc -v -d ${SNAP_DB_DATABASE} -h ${SNAP_DB_HOST} -U ${SNAP_DB_USER} -n public --exclude-table-data=printer_server_errors > /tmp/snap_db_backup.gz"
+	@echo "Finished remote Snap database dump"
+
+# Restore local data from Snap backup
+snap_restore:
+	@echo "Restarting database container to ensure no active connections..."
+	@docker compose restart db_snap
+	@echo "Dropping local database"
+	@docker compose exec db_snap  bash -c "PGPASSWORD=${LOCAL_DB_PASS} dropdb --if-exists -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
+	@echo "Creating local database"
+	@docker compose exec db_snap  bash -c "PGPASSWORD=${LOCAL_DB_PASS} createdb -U ${LOCAL_DB_USER} ${LOCAL_DB_DATABASE}"
+	@echo "Restoring local database"
+	@time docker compose exec db_snap  bash -c "PGPASSWORD=${LOCAL_DB_PASS} pg_restore --clean --if-exists -Fc -U ${LOCAL_DB_USER} -d ${LOCAL_DB_DATABASE} /tmp/snap_db_backup.gz"
+	@echo "Finished restoring local database from Snap backup"
+	@echo "$$(date '+%Y-%m-%d %H:%M:%S') snap_restore" >> $(RESTORE_LOG)
+
+snap_refresh: snap_backup snap_restore
+
 # Backup Prod database
 prod_backup:
 	@echo "Starting production database backup..."
@@ -95,6 +116,12 @@ activate_qa:
 	@docker compose restart db-proxy
 	@echo "QA database activated"
 
+activate_snap:
+	@echo "Activating Snap database"
+	@printf 'frontend pg-frontend\n    bind *:5432\n    default_backend snap-db\n' > ./haproxy/haproxy-frontend.cfg
+	@docker compose restart db-proxy
+	@echo "Snap database activated"
+
 activate_prod:
 	@echo "Activating prod database"
 	@printf 'frontend pg-frontend\n    bind *:5432\n    default_backend prod-db\n' > ./haproxy/haproxy-frontend.cfg
@@ -112,7 +139,7 @@ show_restore_log:
 		echo ""; \
 		printf "  %-8s %-19s %s\n" "Env" "Elapsed" "Date"; \
 		printf "  %-8s %-19s %s\n" "---" "-------" "-------------------"; \
-		for db in dev_restore qa_restore prod_restore; do \
+		for db in dev_restore qa_restore snap_restore prod_restore; do \
 			env_name=$$(echo "$$db" | sed 's/_restore//'); \
 			last=$$(grep " $$db$$" $(RESTORE_LOG) | tail -1); \
 			if [ -n "$$last" ]; then \
@@ -141,4 +168,4 @@ show_restore_log:
 		echo "No restores logged yet ($(RESTORE_LOG) not found)."; \
 	fi
 
-.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore prod_backup prod_restore prod_refresh prod_tunnel activate_dev activate_qa activate_prod show_active_env show_restore_log
+.PHONY: up down backup restore refresh qa_backup qa_refresh qa_restore snap_backup snap_restore snap_refresh prod_backup prod_restore prod_refresh prod_tunnel activate_dev activate_qa activate_snap activate_prod show_active_env show_restore_log
