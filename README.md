@@ -132,6 +132,41 @@ existing connections drop.
 
 Every successful `*_backup` and `*_restore` appends a `YYYY-MM-DD HH:MM:SS <env>_<backup|restore>` line to `restore.log` (gitignored, local to your machine). A `*_refresh` writes both entries via its backup and restore steps. Older `<env>_refresh` lines are still read, counting as both a backup and a restore.
 
+## Shell Aliases (zsh)
+
+`tt_aliases.zsh` in the project root wraps every make target so you can run them from any
+directory. It uses `make -C`, which chdir's into the project before running a recipe, so
+`docker compose`, `./haproxy/...` and `restore.log` resolve against the project rather than your
+current directory.
+
+Install with oh-my-zsh, which sources every `*.zsh` in its custom directory automatically:
+```bash
+ln -s "$PWD/tt_aliases.zsh" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/tt_database.zsh"
+exec zsh
+```
+
+Or without oh-my-zsh, add to `~/.zshrc`:
+```bash
+source /path/to/tt_database/tt_aliases.zsh
+```
+
+The project path is taken from the file's own location (following symlinks), so no path needs
+editing. Export `TT_DB_DIR` before sourcing to override it.
+
+| Command | Runs |
+|---|---|
+| `tt <target>` | any make target, with tab completion; bare `tt` shows the active environment |
+| `ttlog` / `ttenv` | `show_restore_log` / `show_active_env` |
+| `ttdev` `ttqa` `ttsnap` `ttprod` | `activate_<env>` — switch what `localhost:5432` answers as |
+| `ttactivate <env>` | `activate_<env>`, for a variable env name |
+| `ttrefresh <env>` | `<env>_refresh` (backup, then restore over the local copy) |
+| `ttbk <env>` / `ttrs <env>` | `<env>_backup` / `<env>_restore` |
+| `ttup` | `up` |
+| `ttcd` | `cd` to the project |
+
+There is deliberately no alias for `down`, since it deletes the named volumes along with every
+restored database — run `tt down` when you mean it.
+
 ## Windows Usage Notes
 
 If you encounter an execution policy error when running `.ps1` files, you may need to run this once in your PowerShell terminal:
